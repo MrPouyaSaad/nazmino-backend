@@ -1,8 +1,0 @@
-{
-  "platform": "node",
-  "app": "nazmino",
-  "port": 5000,
-  "build": {
-    "builder": "node"
-  }
-}
