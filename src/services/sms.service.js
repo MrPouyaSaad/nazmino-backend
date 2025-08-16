@@ -7,7 +7,7 @@ exports.sendOTP = (phone) => {
     const options = {
       hostname: 'console.melipayamak.com',
       port: 443,
-      path: '/api/send/otp/${process.env.MELI_API_KEY}',
+      path: '/api/send/otp/4368aa61f1ee4edb8fb44f569d626e16',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
