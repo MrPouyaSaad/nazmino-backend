@@ -7,36 +7,50 @@ exports.sendOTP = (phone) => {
     const options = {
       hostname: 'console.melipayamak.com',
       port: 443,
-      path: '/api/send/otp/4368aa61f1ee4edb8fb44f569d626e16', // ← لینک اختصاصی‌ات
+      path: '/api/send/otp/${process.env.MELI_API_KEY}',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': data.length
+        'Content-Length': data.length 
       }
     };
 
     const req = https.request(options, res => {
       let body = '';
 
-      res.on('data', d => {
-        body += d;
-      });
+      res.on('data', chunk => { body += chunk; });
 
       res.on('end', () => {
         try {
           const parsed = JSON.parse(body);
-          if (res.statusCode === 200 && parsed.code) {
+          console.log('📩 SMS API full response:', parsed);
+
+          if (parsed.status && parsed.status.includes('ارسال موفق بود') && parsed.code) {
             resolve(parsed.code);
           } else {
-            reject(parsed.status || 'خطا در دریافت کد OTP');
+            reject({
+              message: parsed.status || 'خطا در ارسال OTP',
+              message_en: 'Failed to send OTP'
+            });
           }
-        } catch (e) {
-          reject('پاسخ نامعتبر از سرویس پیامک');
+        } catch (err) {
+          console.error('JSON parse error:', err, body);
+          reject({
+            message: 'پاسخ نامعتبر از سرویس پیامک',
+            message_en: 'Invalid response from SMS service'
+          });
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', err => {
+      console.error('❌ HTTPS request error:', err);
+      reject({
+        message: 'خطای ارتباط با سرویس پیامک',
+        message_en: 'Error connecting to SMS service'
+      });
+    });
+
     req.write(data);
     req.end();
   });

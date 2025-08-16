@@ -1,6 +1,6 @@
 // models/history.model.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db.config');  // این مسیر باید به فایل تنظیمات کانکشن دیتابیس اشاره کنه
+const sequelize = require('../config/db.config');
 
 const History = sequelize.define('History', {
   title: {
@@ -23,7 +23,7 @@ const History = sequelize.define('History', {
     type: DataTypes.DATE,
     allowNull: false
   },
-  user_id: {    // اضافه کردن این فیلد
+  user_id: {    
     type: DataTypes.INTEGER,
     allowNull: false
   },

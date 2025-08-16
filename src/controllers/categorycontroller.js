@@ -2,28 +2,14 @@ const categoryService = require("../services/category.service");
 
 exports.getCategories = async (req, res) => {
   try {
-    console.log('Fetching categories for user ID:', req.user.id);
-    
-    const categories = await Category.findAll({
-      where: { user_id: req.user.id },
-      order: [['created_at', 'DESC']],
-      attributes: ['id', 'name', 'is_default'] // فقط فیلدهای مورد نیاز
-    });
-
-    console.log('Categories found:', categories.length);
-    
-    res.status(200).json({
-      success: true,
-      count: categories.length,
-      data: categories
-    });
-    
+    const categories = await categoryService.getCategories(req.user.id);
+    res.json({ success: true, count: categories.length, data: categories });
   } catch (err) {
-    console.error('Error in getCategories:', err);
+    console.error("Error fetching categories:", err);
     res.status(500).json({
       success: false,
-      message: 'خطا در دریافت دسته‌بندی‌ها',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      message: "خطا در دریافت دسته‌بندی‌ها",
+      message_en: "Error fetching categories"
     });
   }
 };
@@ -31,27 +17,22 @@ exports.getCategories = async (req, res) => {
 exports.createCategory = async (req, res) => {
   try {
     const { name } = req.body;
-    
-    if (!name || name.trim().length === 0) {
+    if (!name || name.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: "نام دسته‌بندی الزامی است"
+        message: "نام دسته‌بندی الزامی است",
+        message_en: "Category name is required"
       });
     }
 
-    const category = await categoryService.createCategory(
-      req.user.id, 
-      name.trim()
-    );
-    
-    res.status(201).json({
-      success: true,
-      data: category
-    });
+    const category = await categoryService.createCategory(req.user.id, name.trim());
+    res.status(201).json({ success: true, data: category });
   } catch (err) {
-    res.status(400).json({
+    console.error("Error creating category:", err);
+    res.status(500).json({
       success: false,
-      message: err.message
+      message: "خطا در ایجاد دسته‌بندی",
+      message_en: "Error creating category"
     });
   }
 };
@@ -59,27 +40,21 @@ exports.createCategory = async (req, res) => {
 exports.deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
+    const result = await categoryService.deleteCategory(req.user.id, parseInt(id));
+    if (!result) {
+      return res.status(404).json({
         success: false,
-        message: "شناسه دسته‌بندی نامعتبر است"
+        message: "دسته‌بندی یافت نشد",
+        message_en: "Category not found"
       });
     }
-
-    const result = await categoryService.deleteCategory(
-      req.user.id, 
-      parseInt(id)
-    );
-    
-    res.json({
-      success: true,
-      data: result
-    });
+    res.json({ success: true, data: result });
   } catch (err) {
-    res.status(400).json({
+    console.error("Error deleting category:", err);
+    res.status(500).json({
       success: false,
-      message: err.message
+      message: "خطا در حذف دسته‌بندی",
+      message_en: "Error deleting category"
     });
   }
 };
@@ -87,26 +62,21 @@ exports.deleteCategory = async (req, res) => {
 exports.getCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const category = await categoryService.getCategoryById(
-      req.user.id,
-      parseInt(id)
-    );
-    
+    const category = await categoryService.getCategoryById(req.user.id, parseInt(id));
     if (!category) {
       return res.status(404).json({
         success: false,
-        message: "دسته‌بندی مورد نظر یافت نشد"
+        message: "دسته‌بندی یافت نشد",
+        message_en: "Category not found"
       });
     }
-    
-    res.json({
-      success: true,
-      data: category
-    });
+    res.json({ success: true, data: category });
   } catch (err) {
-    res.status(400).json({
+    console.error("Error fetching category:", err);
+    res.status(500).json({
       success: false,
-      message: err.message
+      message: "خطا در دریافت دسته‌بندی",
+      message_en: "Error fetching category"
     });
   }
 };

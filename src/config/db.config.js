@@ -18,4 +18,4 @@ sequelize.authenticate()
   .then(() => console.log("✅ Connected to Neon PostgreSQL"))
   .catch(err => console.error("❌ Connection failed:", err));
 
-module.exports = sequelize; // این خط حیاتی است!
+module.exports = sequelize; 
