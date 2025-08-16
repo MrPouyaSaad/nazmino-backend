@@ -3,34 +3,42 @@ const History = require("../models/history");
 const Transaction = require("../models/transaction");
 const Category = require("../models/category.model");
 
-exports.getAll = async () => {
-  return await History.findAll();
-};
-
-exports.remove = async (id) => {
-  return await History.destroy({ where: { id } });
-};
-
-exports.removeAll = async () => {
-  return await History.destroy({ where: {} });
-};
-
 exports.restore = async (id) => {
   const doc = await History.findByPk(id);
   if (!doc) throw new Error("تراکنش یافت نشد");
+
+  // 1. پیدا کردن دسته‌بندی پیش‌فرض با نام "همه"
+  const defaultCategory = await Category.findOne({ 
+    where: { name: "همه" } 
+  });
+
+  if (!defaultCategory) {
+    throw new Error("دسته‌بندی پیش‌فرض 'همه' یافت نشد");
+  }
+
+  // 2. بررسی وجود دسته‌بندی اصلی
+  let categoryId = doc.category_id;
+  if (categoryId) {
+    const categoryExists = await Category.findByPk(categoryId);
+    if (!categoryExists) {
+      categoryId = defaultCategory.id; // استفاده از دسته‌بندی پیش‌فرض
+      console.warn(`دسته‌بندی با شناسه ${doc.category_id} یافت نشد. از دسته‌بندی پیش‌فرض استفاده شد.`);
+    }
+  } else {
+    categoryId = defaultCategory.id; // اگر category_id null بود
+  }
 
   try {
     const tx = await Transaction.create({
       title: doc.title,
       amount: doc.amount,
       type: doc.type,
-      category_id: doc.category_id,  // به جای category از category_id استفاده کن
+      category_id: categoryId, // استفاده از شناسه صحیح دسته‌بندی
       date: doc.date,
-      user_id: doc.user_id // اگر این فیلد هم اجباریه حتما بفرستش
+      user_id: doc.user_id
     });
 
     await doc.destroy();
-
     return tx;
   } catch (err) {
     console.error("❌ خطا در بازگردانی تراکنش:", err);
@@ -38,20 +46,19 @@ exports.restore = async (id) => {
   }
 };
 
-
 exports.archiveTransaction = async (transaction) => {
   const plain = transaction.toJSON ? transaction.toJSON() : transaction;
-  const category = await Category.findByPk(plain.category_id);
-  const categoryName = category ? category.name : "بدون دسته‌بندی";
+  
+  // پیدا کردن دسته‌بندی پیش‌فرض برای مواردی که category_id null است
+  const defaultCategory = await Category.findOne({ where: { name: "همه" } });
+  const categoryId = plain.category_id || (defaultCategory ? defaultCategory.id : null);
 
-  // فرض کن transaction داده اصلی تراکنش باشه
-await History.create({
-  title: transaction.title,
-  amount: transaction.amount,
-  type: transaction.type,
-  category_id: transaction.category_id,  // این مقدار رو حتما پاس بده
-  date: transaction.date,
-  user_id: transaction.user_id
-});
-
+  await History.create({
+    title: transaction.title,
+    amount: transaction.amount,
+    type: transaction.type,
+    category_id: categoryId,
+    date: transaction.date,
+    user_id: transaction.user_id
+  });
 };
